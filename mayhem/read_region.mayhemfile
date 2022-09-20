@@ -1,0 +1,7 @@
+project: fastnbt
+target: read-region
+
+cmds:
+  - cmd: /read_region
+  - cmd: /read_region_no_inst @@
+    libfuzzer: false
