@@ -1,0 +1,7 @@
+project: fastnbt
+target: deserialize-value
+
+cmds:
+  - cmd: /deserialize_value
+  - cmd: /deserialize_value_no_inst @@
+    libfuzzer: false
