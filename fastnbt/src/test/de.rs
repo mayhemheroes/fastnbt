@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     borrow,
     error::{Error, Result},
-    from_bytes, from_bytes_with_opts, from_reader, nbt,
+    from_bytes, from_bytes_with_opts, from_reader,
     test::builder::Builder,
     to_bytes, ByteArray, DeOpts, IntArray, LongArray, Tag, Value,
 };

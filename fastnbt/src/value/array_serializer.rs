@@ -3,16 +3,13 @@ use serde::ser::Impossible;
 
 use crate::{error::Error, ByteArray, IntArray, LongArray, Tag, Value};
 
-use super::ser::Serializer;
-
 /// ArraySerializer is for serializing the NBT Arrays ie ByteArray, IntArray and
 /// LongArray.
-pub struct ArraySerializer<'a> {
-    pub ser: &'a mut Serializer,
+pub struct ArraySerializer {
     pub tag: Tag,
 }
 
-impl<'a> serde::Serializer for ArraySerializer<'a> {
+impl serde::Serializer for ArraySerializer {
     type Ok = Value;
     type Error = Error;
     type SerializeSeq = Impossible<Self::Ok, Self::Error>;
@@ -96,9 +93,9 @@ impl<'a> serde::Serializer for ArraySerializer<'a> {
         unimplemented!()
     }
 
-    fn serialize_some<T: ?Sized>(self, _value: &T) -> Result<Self::Ok, Self::Error>
+    fn serialize_some<T>(self, _value: &T) -> Result<Self::Ok, Self::Error>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         unimplemented!()
     }
@@ -120,18 +117,18 @@ impl<'a> serde::Serializer for ArraySerializer<'a> {
         unimplemented!()
     }
 
-    fn serialize_newtype_struct<T: ?Sized>(
+    fn serialize_newtype_struct<T>(
         self,
         _name: &'static str,
         _value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         unimplemented!()
     }
 
-    fn serialize_newtype_variant<T: ?Sized>(
+    fn serialize_newtype_variant<T>(
         self,
         _name: &'static str,
         _variant_index: u32,
@@ -139,7 +136,7 @@ impl<'a> serde::Serializer for ArraySerializer<'a> {
         _value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         unimplemented!()
     }

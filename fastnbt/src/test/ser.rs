@@ -1,14 +1,13 @@
 use std::{collections::HashMap, io::Cursor, iter::FromIterator};
 
 use crate::{
-    borrow, from_bytes, from_bytes_with_opts,
+    borrow, from_bytes,
     test::{resources::CHUNK_RAW_WITH_ENTITIES, Single, Wrap},
-    to_bytes, to_bytes_with_opts, to_writer_with_opts, ByteArray, DeOpts, IntArray, LongArray,
-    SerOpts, Tag, Value,
+    to_bytes, to_bytes_with_opts, to_writer_with_opts, ByteArray, IntArray, LongArray, SerOpts,
+    Tag, Value,
 };
 use serde::{ser::SerializeMap, Deserialize, Serialize};
 use serde_bytes::{ByteBuf, Bytes};
-use serde_json::to_writer;
 
 use super::builder::Builder;
 

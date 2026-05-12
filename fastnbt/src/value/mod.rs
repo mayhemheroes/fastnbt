@@ -4,7 +4,7 @@ mod ser;
 
 use std::collections::HashMap;
 
-use serde::{serde_if_integer128, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{error::Error, ByteArray, IntArray, LongArray};
 
@@ -236,19 +236,19 @@ impl From<&bool> for Value {
 // DEALINGS IN THE SOFTWARE.
 
 fn eq_i64(value: &Value, other: i64) -> bool {
-    value.as_i64().map_or(false, |i| i == other)
+    value.as_i64() == Some(other)
 }
 
 fn eq_u64(value: &Value, other: u64) -> bool {
-    value.as_u64().map_or(false, |i| i == other)
+    value.as_u64() == Some(other)
 }
 
 fn eq_f64(value: &Value, other: f64) -> bool {
-    value.as_f64().map_or(false, |i| i == other)
+    value.as_f64() == Some(other)
 }
 
 fn eq_str(value: &Value, other: &str) -> bool {
-    value.as_str().map_or(false, |i| i == other)
+    value.as_str() == Some(other)
 }
 
 impl PartialEq<str> for Value {
@@ -257,7 +257,7 @@ impl PartialEq<str> for Value {
     }
 }
 
-impl<'a> PartialEq<&'a str> for Value {
+impl PartialEq<&str> for Value {
     fn eq(&self, other: &&str) -> bool {
         eq_str(self, other)
     }
@@ -269,7 +269,7 @@ impl PartialEq<Value> for str {
     }
 }
 
-impl<'a> PartialEq<Value> for &'a str {
+impl PartialEq<Value> for &str {
     fn eq(&self, other: &Value) -> bool {
         eq_str(other, self)
     }
@@ -345,9 +345,8 @@ macro_rules! from_128bit {
         )+
     };
 }
-serde_if_integer128! {
-    from_128bit!(i128, u128);
-}
+
+from_128bit!(i128, u128);
 
 /// Convert a `T` into `fastnbt::Value` which is an enum that can represent
 /// any valid NBT data.

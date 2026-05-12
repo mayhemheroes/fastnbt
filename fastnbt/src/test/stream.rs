@@ -62,14 +62,14 @@ fn simple_long() -> Result<()> {
     let payload = Builder::new()
         .tag(Tag::Long)
         .name("abc")
-        .long_payload(std::i32::MAX as i64 + 1)
+        .long_payload(i32::MAX as i64 + 1)
         .build();
 
     let mut parser = Parser::new(payload.as_slice());
 
     assert_eq!(
         parser.next()?,
-        Value::Long(name("abc"), std::i32::MAX as i64 + 1)
+        Value::Long(name("abc"), i32::MAX as i64 + 1)
     );
     Ok(())
 }

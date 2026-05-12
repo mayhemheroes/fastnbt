@@ -64,6 +64,7 @@ fn tile_entities() {
 
     #[derive(Deserialize, Debug)]
     #[serde(untagged)]
+    #[allow(dead_code)]
     enum Entity {
         Known(KnownEntity),
         Unknown(Value),
@@ -110,6 +111,7 @@ fn avoiding_alloc_with_chunk() {
 
     #[derive(Deserialize, Debug)]
     #[serde(rename_all = "PascalCase")]
+    #[allow(dead_code)]
     pub struct Section<'a> {
         #[serde(borrow)]
         pub block_states: Option<&'a [u8]>,

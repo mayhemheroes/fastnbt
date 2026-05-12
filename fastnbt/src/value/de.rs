@@ -6,7 +6,7 @@ use serde::{
         DeserializeSeed, EnumAccess, Expected, IntoDeserializer, MapAccess, SeqAccess, Unexpected,
         VariantAccess, Visitor,
     },
-    forward_to_deserialize_any, serde_if_integer128, Deserialize, Deserializer,
+    forward_to_deserialize_any, Deserialize, Deserializer,
 };
 use serde_bytes::ByteBuf;
 
@@ -339,20 +339,18 @@ impl<'de> serde::Deserializer<'de> for &'de Value {
     deserialize_number!(deserialize_f32, visit_f32, f32, Float);
     deserialize_number!(deserialize_f64, visit_f64, f64, Double);
 
-    serde_if_integer128! {
-        fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-        where
-            V: Visitor<'de>,
-        {
-            visitor.visit_i128(get_i128_value(self)?)
-        }
+    fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        visitor.visit_i128(get_i128_value(self)?)
+    }
 
-        fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-        where
-            V: Visitor<'de>,
-        {
-            visitor.visit_u128(get_i128_value(self)? as u128)
-        }
+    fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        visitor.visit_u128(get_i128_value(self)? as u128)
     }
 
     #[inline]
@@ -822,11 +820,8 @@ impl<'de> serde::Deserializer<'de> for MapKeyDeserializer<'de> {
     deserialize_integer_key!(deserialize_u16 => visit_u16);
     deserialize_integer_key!(deserialize_u32 => visit_u32);
     deserialize_integer_key!(deserialize_u64 => visit_u64);
-
-    serde_if_integer128! {
-        deserialize_integer_key!(deserialize_i128 => visit_i128);
-        deserialize_integer_key!(deserialize_u128 => visit_u128);
-    }
+    deserialize_integer_key!(deserialize_i128 => visit_i128);
+    deserialize_integer_key!(deserialize_u128 => visit_u128);
 
     #[inline]
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Error>
@@ -879,7 +874,7 @@ impl Value {
     }
 
     #[cold]
-    fn unexpected(&self) -> Unexpected {
+    fn unexpected(&self) -> Unexpected<'_> {
         match self {
             Value::Byte(v) => Unexpected::Signed(*v as i64),
             Value::Short(v) => Unexpected::Signed(*v as i64),

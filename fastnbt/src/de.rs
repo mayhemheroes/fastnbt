@@ -285,7 +285,7 @@ impl<R: Read> Deserializer<input::Reader<R>> {
     }
 }
 
-impl<'de, 'a, In> de::Deserializer<'de> for &'a mut Deserializer<In>
+impl<'de, In> de::Deserializer<'de> for &mut Deserializer<In>
 where
     In: Input<'de>,
 {

@@ -3,23 +3,13 @@ use fastanvil::{
     Rgba,
 };
 use flate2::write::GzEncoder;
+use std::collections::HashMap;
 use std::error::Error;
 use std::path::Path;
-use std::{collections::HashMap, fmt::Display};
 
 use regex::Regex;
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
-
-#[derive(Debug)]
-struct ErrorMessage(&'static str);
-impl std::error::Error for ErrorMessage {}
-
-impl Display for ErrorMessage {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
 
 fn avg_colour(rgba_data: &[u8]) -> Rgba {
     let mut avg = [0f64; 4];
@@ -314,7 +304,10 @@ pub fn make_palette(mc_jar_path: &Path) -> Result<()> {
             texture_template: "minecraft:block/mangrove_roots_top",
         },
         RegexMapping {
-            blockstate: Regex::new(r"minecraft:(pumpkin|melon|attached_melon|attached_pumpkin|big_dripleaf)_stem").unwrap(),
+            blockstate: Regex::new(
+                r"minecraft:(pumpkin|melon|attached_melon|attached_pumpkin|big_dripleaf)_stem",
+            )
+            .unwrap(),
             texture_template: "minecraft:block/$1",
         },
         RegexMapping {

@@ -17,9 +17,22 @@
 use std::{borrow::Cow, marker::PhantomData};
 
 use byteorder::{WriteBytesExt, BE};
-use serde::{de::{self, SeqAccess, MapAccess, IntoDeserializer, value::{BorrowedStrDeserializer, SeqAccessDeserializer, BytesDeserializer}, Visitor, DeserializeSeed}, forward_to_deserialize_any};
+use serde::{
+    de::{
+        self,
+        value::{BorrowedStrDeserializer, BytesDeserializer, SeqAccessDeserializer},
+        DeserializeSeed, IntoDeserializer, MapAccess, SeqAccess, Visitor,
+    },
+    forward_to_deserialize_any,
+};
 
-use crate::{error::Error, parser::{parse_i8, parse_i16, parse_i32, parse_i64, parse_bool, parse_f32, parse_f64, parse_str}, LONG_ARRAY_TOKEN, INT_ARRAY_TOKEN, BYTE_ARRAY_TOKEN};
+use crate::{
+    error::Error,
+    parser::{
+        parse_bool, parse_f32, parse_f64, parse_i16, parse_i32, parse_i64, parse_i8, parse_str,
+    },
+    BYTE_ARRAY_TOKEN, INT_ARRAY_TOKEN, LONG_ARRAY_TOKEN,
+};
 
 pub struct Deserializer<'de> {
     pub(crate) input: &'de str,
@@ -29,7 +42,7 @@ pub struct Deserializer<'de> {
 impl<'a, 'de: 'a> Deserializer<'de> {
     #[allow(clippy::should_implement_trait)]
     pub fn from_str(input: &'de str) -> Self {
-        Self { input, pos: 0, }
+        Self { input, pos: 0 }
     }
 
     pub(crate) fn advance(&mut self, new_input: &'de str) {
@@ -56,12 +69,12 @@ impl<'a, 'de: 'a> Deserializer<'de> {
     }
 }
 
-impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
+impl<'de> de::Deserializer<'de> for &mut Deserializer<'de> {
     type Error = Error;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: de::Visitor<'de>
+        V: de::Visitor<'de>,
     {
         if self.input.is_empty() {
             return Err(Error::unexpected_eof());
@@ -86,7 +99,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
             match v {
                 Cow::Borrowed(v) => visitor.visit_borrowed_str(v),
                 Cow::Owned(v) => visitor.visit_str(&v),
-            }.map(|v| (input, v))
+            }
+            .map(|v| (input, v))
         } else if self.starts_delimiter("[B;") {
             match visitor.visit_map(ArrayWrapperAccess::bytes(self)) {
                 Ok(v) => self.end_delimiter("]").map(|input| (input, v)),
@@ -133,10 +147,12 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
-        V: de::Visitor<'de>
+        V: de::Visitor<'de>,
     {
         let (input, value) = if let Ok((input, v)) = parse_str(self.input) {
-            visitor.visit_enum(v.as_ref().into_deserializer()).map(|v| (input, v))
+            visitor
+                .visit_enum(v.as_ref().into_deserializer())
+                .map(|v| (input, v))
         } else {
             Err(Error::invalid_input(self.pos))
         }?;
@@ -146,11 +162,10 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
     fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: de::Visitor<'de>
+        V: de::Visitor<'de>,
     {
         self.deserialize_any(visitor)
     }
-
 }
 
 struct CommaSep<'a, 'de: 'a> {
@@ -160,7 +175,7 @@ struct CommaSep<'a, 'de: 'a> {
 
 impl<'a, 'de> CommaSep<'a, 'de> {
     fn new(de: &'a mut Deserializer<'de>) -> Self {
-        CommaSep { de, first: true, }
+        CommaSep { de, first: true }
     }
 }
 
@@ -169,13 +184,21 @@ impl<'a, 'de> SeqAccess<'de> for CommaSep<'a, 'de> {
 
     fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error>
     where
-        T: de::DeserializeSeed<'de>
+        T: de::DeserializeSeed<'de>,
     {
         if self.de.input.starts_with(']') {
             return Ok(None);
         }
         // Comma is required before every element except the first.
-        if !self.first && self.de.input.chars().next().ok_or(Error::unexpected_eof())? != ',' {
+        if !self.first
+            && self
+                .de
+                .input
+                .chars()
+                .next()
+                .ok_or(Error::unexpected_eof())?
+                != ','
+        {
             return Err(Error::expected_comma());
         } else if !self.first {
             self.de.advance(&self.de.input[','.len_utf8()..])
@@ -190,13 +213,21 @@ impl<'a, 'de> MapAccess<'de> for CommaSep<'a, 'de> {
 
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
     where
-        K: de::DeserializeSeed<'de>
+        K: de::DeserializeSeed<'de>,
     {
         if self.de.input.starts_with('}') {
             return Ok(None);
         }
         // Comma is required before every element except the first.
-        if !self.first && self.de.input.chars().next().ok_or(Error::unexpected_eof())? != ',' {
+        if !self.first
+            && self
+                .de
+                .input
+                .chars()
+                .next()
+                .ok_or(Error::unexpected_eof())?
+                != ','
+        {
             return Err(Error::expected_comma());
         } else if !self.first {
             self.de.advance(&self.de.input[','.len_utf8()..]);
@@ -207,9 +238,16 @@ impl<'a, 'de> MapAccess<'de> for CommaSep<'a, 'de> {
 
     fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value, Self::Error>
     where
-        V: de::DeserializeSeed<'de>
+        V: de::DeserializeSeed<'de>,
     {
-        if self.de.input.chars().next().ok_or(Error::unexpected_eof())? != ':' {
+        if self
+            .de
+            .input
+            .chars()
+            .next()
+            .ok_or(Error::unexpected_eof())?
+            != ':'
+        {
             return Err(Error::expected_colon());
         } else {
             self.de.advance(&self.de.input[':'.len_utf8()..]);
@@ -226,15 +264,27 @@ struct ArrayWrapperAccess<'a, 'de: 'a> {
 
 impl<'a, 'de> ArrayWrapperAccess<'a, 'de> {
     pub fn bytes(de: &'a mut Deserializer<'de>) -> Self {
-        ArrayWrapperAccess { de, token: BYTE_ARRAY_TOKEN, read: false }
+        ArrayWrapperAccess {
+            de,
+            token: BYTE_ARRAY_TOKEN,
+            read: false,
+        }
     }
 
     pub fn ints(de: &'a mut Deserializer<'de>) -> Self {
-        ArrayWrapperAccess { de, token: INT_ARRAY_TOKEN, read: false }
+        ArrayWrapperAccess {
+            de,
+            token: INT_ARRAY_TOKEN,
+            read: false,
+        }
     }
 
     pub fn longs(de: &'a mut Deserializer<'de>) -> Self {
-        ArrayWrapperAccess { de, token: LONG_ARRAY_TOKEN, read: false }
+        ArrayWrapperAccess {
+            de,
+            token: LONG_ARRAY_TOKEN,
+            read: false,
+        }
     }
 }
 
@@ -243,11 +293,12 @@ impl<'a, 'de> MapAccess<'de> for ArrayWrapperAccess<'a, 'de> {
 
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
     where
-        K: de::DeserializeSeed<'de>
+        K: de::DeserializeSeed<'de>,
     {
         if !self.read {
             self.read = true;
-            seed.deserialize(BorrowedStrDeserializer::new(self.token)).map(Some)
+            seed.deserialize(BorrowedStrDeserializer::new(self.token))
+                .map(Some)
         } else {
             Ok(None)
         }
@@ -255,20 +306,24 @@ impl<'a, 'de> MapAccess<'de> for ArrayWrapperAccess<'a, 'de> {
 
     fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value, Self::Error>
     where
-        V: de::DeserializeSeed<'de>
+        V: de::DeserializeSeed<'de>,
     {
         match self.token {
             BYTE_ARRAY_TOKEN => {
-                let data = <Vec<i8> as de::Deserialize>::deserialize(SeqAccessDeserializer::new(CommaSep::new(self.de)))?;
+                let data = <Vec<i8> as de::Deserialize>::deserialize(SeqAccessDeserializer::new(
+                    CommaSep::new(self.de),
+                ))?;
                 let data = unsafe { &*(data.as_slice() as *const [i8] as *const [u8]) };
                 seed.deserialize(BytesDeserializer::new(data))
             }
             INT_ARRAY_TOKEN => {
-                let data = NumStride::<i32>(PhantomData).deserialize(SeqAccessDeserializer::new(CommaSep::new(self.de)))?;
+                let data = NumStride::<i32>(PhantomData)
+                    .deserialize(SeqAccessDeserializer::new(CommaSep::new(self.de)))?;
                 seed.deserialize(BytesDeserializer::new(&data.bytes))
             }
             LONG_ARRAY_TOKEN => {
-                let data = NumStride::<i64>(PhantomData).deserialize(SeqAccessDeserializer::new(CommaSep::new(self.de)))?;
+                let data = NumStride::<i64>(PhantomData)
+                    .deserialize(SeqAccessDeserializer::new(CommaSep::new(self.de)))?;
                 seed.deserialize(BytesDeserializer::new(&data.bytes))
             }
             _ => unreachable!("Cannot have a different NBT array type"),
@@ -286,7 +341,7 @@ impl<'de> de::DeserializeSeed<'de> for NumStride<i32> {
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
-        D: serde::Deserializer<'de>
+        D: serde::Deserializer<'de>,
     {
         struct NumArrVisitor(Vec<u8>);
 
@@ -298,8 +353,8 @@ impl<'de> de::DeserializeSeed<'de> for NumStride<i32> {
             }
 
             fn visit_seq<A>(mut self, mut seq: A) -> Result<Self::Value, A::Error>
-                where
-                    A: SeqAccess<'de>,
+            where
+                A: SeqAccess<'de>,
             {
                 while let Some(n) = seq.next_element::<i32>()? {
                     self.0.write_i32::<BE>(n).unwrap();
@@ -317,7 +372,7 @@ impl<'de> de::DeserializeSeed<'de> for NumStride<i64> {
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
-        D: serde::Deserializer<'de>
+        D: serde::Deserializer<'de>,
     {
         struct NumArrVisitor(Vec<u8>);
 
@@ -329,8 +384,8 @@ impl<'de> de::DeserializeSeed<'de> for NumStride<i64> {
             }
 
             fn visit_seq<A>(mut self, mut seq: A) -> Result<Self::Value, A::Error>
-                where
-                    A: SeqAccess<'de>,
+            where
+                A: SeqAccess<'de>,
             {
                 while let Some(n) = seq.next_element::<i64>()? {
                     self.0.write_i64::<BE>(n).unwrap();

@@ -1,4 +1,4 @@
-use clap::{App, Arg, ArgMatches, SubCommand};
+use clap::{Arg, ArgMatches, Command};
 use env_logger::Env;
 use fastanvil::RenderedPalette;
 use fastanvil::{render_region, CCoord, HeightMode, RCoord, RegionLoader, Rgba, TopShadeRenderer};
@@ -109,9 +109,9 @@ fn get_palette(path: Option<&str>) -> Result<RenderedPalette> {
 }
 
 fn render(args: &ArgMatches) -> Result<()> {
-    let world: PathBuf = args.value_of("world").unwrap().parse().unwrap();
-    let dim: &str = args.value_of("dimension").unwrap();
-    let height_mode = match args.is_present("calculate-heights") {
+    let world: PathBuf = args.get_one::<String>("world").unwrap().parse().unwrap();
+    let dim: &str = args.get_one::<String>("dimension").unwrap().as_str();
+    let height_mode = match args.get_flag("calculate-heights") {
         true => HeightMode::Calculate,
         false => HeightMode::Trust,
     };
@@ -126,7 +126,10 @@ fn render(args: &ArgMatches) -> Result<()> {
 
     let coords = loader.list()?;
 
-    let bounds = match (args.value_of("size"), args.value_of("offset")) {
+    let bounds = match (
+        args.get_one::<String>("size").map(|s| s.as_str()),
+        args.get_one::<String>("offset").map(|s| s.as_str()),
+    ) {
         (Some(size), Some(offset)) => {
             make_bounds(parse_coord(size).unwrap(), parse_coord(offset).unwrap())
         }
@@ -141,7 +144,7 @@ fn render(args: &ArgMatches) -> Result<()> {
 
     let region_len: usize = 32 * 16;
 
-    let pal = get_palette(args.value_of("palette"))?;
+    let pal = get_palette(args.get_one::<String>("palette").map(|s| s.as_str()))?;
 
     let region_maps: Vec<_> = coords
         .into_par_iter()
@@ -206,10 +209,10 @@ fn render(args: &ArgMatches) -> Result<()> {
 }
 
 fn tiles(args: &ArgMatches) -> Result<()> {
-    let world: PathBuf = args.value_of("world").unwrap().parse().unwrap();
-    let dim: &str = args.value_of("dimension").unwrap();
-    let out: &str = args.value_of("out").unwrap();
-    let height_mode = match args.is_present("calculate-heights") {
+    let world: PathBuf = args.get_one::<String>("world").unwrap().parse().unwrap();
+    let dim: &str = args.get_one::<String>("dimension").unwrap().as_str();
+    let out: &str = args.get_one::<String>("out").unwrap().as_str();
+    let height_mode = match args.get_flag("calculate-heights") {
         true => HeightMode::Calculate,
         false => HeightMode::Trust,
     };
@@ -227,7 +230,10 @@ fn tiles(args: &ArgMatches) -> Result<()> {
 
     let coords = loader.list()?;
 
-    let bounds = match (args.value_of("size"), args.value_of("offset")) {
+    let bounds = match (
+        args.get_one::<String>("size").map(|s| s.as_str()),
+        args.get_one::<String>("offset").map(|s| s.as_str()),
+    ) {
         (Some(size), Some(offset)) => {
             make_bounds(parse_coord(size).unwrap(), parse_coord(offset).unwrap())
         }
@@ -242,7 +248,7 @@ fn tiles(args: &ArgMatches) -> Result<()> {
 
     let region_len: usize = 32 * 16;
 
-    let pal = get_palette(args.value_of("palette"))?;
+    let pal = get_palette(args.get_one::<String>("palette").map(|s| s.as_str()))?;
 
     let regions_processed = coords
         .into_par_iter()
@@ -305,98 +311,68 @@ fn main() -> Result<()> {
         .format_timestamp(None)
         .init();
 
-    let matches = App::new("anvil-fast")
+    let matches = Command::new("anvil-fast")
         .subcommand(
-            SubCommand::with_name("render")
-                .arg(Arg::with_name("world").takes_value(true).required(true))
+            Command::new("render")
+                .arg(Arg::new("world").required(true))
+                .arg(Arg::new("size").long("size").required(false))
                 .arg(
-                    Arg::with_name("size")
-                        .long("size")
-                        .takes_value(true)
-                        .required(false),
-                )
-                .arg(
-                    Arg::with_name("offset")
+                    Arg::new("offset")
                         .long("offset")
-                        .takes_value(true)
                         .required(false)
                         .default_value("0,0"),
                 )
                 .arg(
-                    Arg::with_name("dimension")
+                    Arg::new("dimension")
                         .long("dimension")
-                        .takes_value(true)
                         .required(false)
                         .default_value("overworld"),
                 )
+                .arg(Arg::new("palette").long("palette").required(false))
+                .arg(Arg::new("jar").long("jar").required(false))
                 .arg(
-                    Arg::with_name("palette")
-                        .long("palette")
-                        .takes_value(true)
-                        .required(false),
-                )
-                .arg(
-                    Arg::with_name("jar")
-                        .long("jar")
-                        .takes_value(true)
-                        .required(false),
-                )
-                .arg(
-                    Arg::with_name("calculate-heights")
+                    Arg::new("calculate-heights")
                         .long("calculate-heights")
-                        .takes_value(false)
+                        .action(clap::ArgAction::SetTrue)
                         .required(false),
                 ),
         )
         .subcommand(
-            SubCommand::with_name("tiles")
-                .arg(Arg::with_name("world").takes_value(true).required(true))
+            Command::new("tiles")
+                .arg(Arg::new("world").required(true))
+                .arg(Arg::new("size").long("size").required(false))
                 .arg(
-                    Arg::with_name("size")
-                        .long("size")
-                        .takes_value(true)
-                        .required(false),
-                )
-                .arg(
-                    Arg::with_name("offset")
+                    Arg::new("offset")
                         .long("offset")
-                        .takes_value(true)
                         .required(false)
                         .default_value("0,0"),
                 )
                 .arg(
-                    Arg::with_name("dimension")
+                    Arg::new("dimension")
                         .long("dimension")
-                        .takes_value(true)
                         .required(false)
                         .default_value("overworld"),
                 )
                 .arg(
-                    Arg::with_name("out")
+                    Arg::new("out")
                         .long("out")
-                        .takes_value(true)
                         .required(false)
                         .default_value("tiles"),
                 )
+                .arg(Arg::new("palette").long("palette").required(false))
                 .arg(
-                    Arg::with_name("palette")
-                        .long("palette")
-                        .takes_value(true)
-                        .required(false),
-                )
-                .arg(
-                    Arg::with_name("calculate-heights")
+                    Arg::new("calculate-heights")
                         .long("calculate-heights")
-                        .takes_value(false)
+                        .action(clap::ArgAction::SetTrue)
                         .required(false),
                 ),
         )
         .get_matches();
 
     match matches.subcommand() {
-        ("render", Some(args)) => render(args)?,
-        ("tiles", Some(args)) => tiles(args)?,
-        _ => error!("{}", matches.usage()),
+        Some(("render", args)) => render(args)?,
+        Some(("tiles", args)) => tiles(args)?,
+        _ => error!("Expected subcommand: render | tiles"),
     };
 
     Ok(())

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fs::File};
 
-use clap::{App, Arg};
+use clap::{Arg, Command};
 use fastanvil::Region;
 use fastnbt::Value;
 use serde::{Deserialize, Serialize};
@@ -36,38 +36,35 @@ struct PaletteItem {
 }
 
 fn main() {
-    let matches = App::new("anvil-palette-swap")
-        .arg(Arg::with_name("region").required(true))
+    let matches = Command::new("anvil-palette-swap")
+        .arg(Arg::new("region").required(true))
         .arg(
-            Arg::with_name("from")
+            Arg::new("from")
                 .long("from")
-                .short("f")
-                .takes_value(true)
+                .short('f')
                 .required(true)
                 .help("blockstate to transform from, eg minecraft:oak_leaves"),
         )
         .arg(
-            Arg::with_name("out-file")
+            Arg::new("out-file")
                 .long("out-file")
-                .short("o")
-                .takes_value(true)
+                .short('o')
                 .required(true)
                 .help("full path to write the resulting region file"),
         )
         .arg(
-            Arg::with_name("to")
+            Arg::new("to")
                 .long("to")
-                .short("t")
-                .takes_value(true)
+                .short('t')
                 .required(true)
                 .help("blockstate to transform to, eg minecraft:diamond_block"),
         )
         .get_matches();
 
-    let region = matches.value_of_os("region").unwrap();
-    let out_path = matches.value_of_os("out-file").unwrap();
-    let from = matches.value_of("from").unwrap();
-    let to = matches.value_of("to").unwrap();
+    let region = matches.get_one::<String>("region").unwrap();
+    let out_path = matches.get_one::<String>("out-file").unwrap();
+    let from = matches.get_one::<String>("from").unwrap().as_str();
+    let to = matches.get_one::<String>("to").unwrap().as_str();
 
     let region = File::open(region).unwrap();
     let mut region = Region::from_stream(region).unwrap();

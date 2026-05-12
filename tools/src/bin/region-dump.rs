@@ -5,7 +5,7 @@ use std::{
     io::{self, Write},
 };
 
-use clap::{App, Arg};
+use clap::{Arg, Command};
 use env_logger::Env;
 use fastanvil::Region;
 use fastnbt::Value;
@@ -15,34 +15,36 @@ fn main() -> Result<(), Box<dyn Error>> {
         .format_timestamp(None)
         .init();
 
-    let matches = App::new("region-dump")
-        .arg(Arg::with_name("file").required(true))
+    let matches = Command::new("region-dump")
+        .arg(Arg::new("file").required(true))
         .arg(
-            Arg::with_name("format")
+            Arg::new("format")
                 .long("format")
-                .short("f")
-                .takes_value(true)
+                .short('f')
                 .required(false)
                 .default_value("rust")
-                .possible_values(&["rust", "rust-pretty", "json", "json-pretty", "nbt", "snbt"])
+                .value_parser(["rust", "rust-pretty", "json", "json-pretty", "nbt", "snbt"])
                 .help("output format"),
         )
         .arg(
-            Arg::with_name("out-dir")
+            Arg::new("out-dir")
                 .long("out-dir")
-                .short("o")
-                .takes_value(true)
+                .short('o')
                 .required(false)
                 .help("optionally separate each chunk into a file in the specified directory"),
         )
         .get_matches();
 
-    let file = matches.value_of("file").expect("file is required");
+    let file = matches
+        .get_one::<String>("file")
+        .map(|s| s.as_str())
+        .expect("file is required");
     let file = File::open(file).expect("file does not exist");
     let output_format = matches
-        .value_of("format")
+        .get_one::<String>("format")
+        .map(|s| s.as_str())
         .expect("no output format specified");
-    let out_dir = matches.value_of("out-dir");
+    let out_dir = matches.get_one::<String>("out-dir").map(|s| s.as_str());
 
     let mut region = Region::from_stream(file).unwrap();
 

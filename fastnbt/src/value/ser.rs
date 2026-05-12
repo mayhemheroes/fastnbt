@@ -1,7 +1,7 @@
 use core::result;
 use std::collections::HashMap;
 
-use serde::{ser::Impossible, serde_if_integer128, Serialize};
+use serde::{ser::Impossible, Serialize};
 
 use crate::{
     error::{Error, Result},
@@ -86,7 +86,7 @@ impl Serialize for Value {
 /// ```
 pub struct Serializer;
 
-impl<'a> serde::Serializer for &'a mut Serializer {
+impl serde::Serializer for &mut Serializer {
     type Ok = Value;
     type Error = Error;
 
@@ -122,25 +122,23 @@ impl<'a> serde::Serializer for &'a mut Serializer {
         Ok(Value::Long(value))
     }
 
-    serde_if_integer128! {
-        fn serialize_i128(self, v: i128) -> Result<Value> {
-            let v = v as u128;
-            Ok(Value::IntArray(IntArray::new(vec![
-                (v >> 96) as i32,
-                (v >> 64) as i32,
-                (v >> 32) as i32,
-                v as i32,
-            ])))
-        }
+    fn serialize_i128(self, v: i128) -> Result<Value> {
+        let v = v as u128;
+        Ok(Value::IntArray(IntArray::new(vec![
+            (v >> 96) as i32,
+            (v >> 64) as i32,
+            (v >> 32) as i32,
+            v as i32,
+        ])))
+    }
 
-        fn serialize_u128(self, v: u128) -> Result<Value> {
-            Ok(Value::IntArray(IntArray::new(vec![
-                (v >> 96) as i32,
-                (v >> 64) as i32,
-                (v >> 32) as i32,
-                v as i32,
-            ])))
-        }
+    fn serialize_u128(self, v: u128) -> Result<Value> {
+        Ok(Value::IntArray(IntArray::new(vec![
+            (v >> 96) as i32,
+            (v >> 64) as i32,
+            (v >> 32) as i32,
+            v as i32,
+        ])))
     }
 
     #[inline]
@@ -219,15 +217,10 @@ impl<'a> serde::Serializer for &'a mut Serializer {
     {
         match variant {
             crate::BYTE_ARRAY_TOKEN => value.serialize(ArraySerializer {
-                ser: self,
                 tag: Tag::ByteArray,
             }),
-            crate::INT_ARRAY_TOKEN => value.serialize(ArraySerializer {
-                ser: self,
-                tag: Tag::IntArray,
-            }),
+            crate::INT_ARRAY_TOKEN => value.serialize(ArraySerializer { tag: Tag::IntArray }),
             crate::LONG_ARRAY_TOKEN => value.serialize(ArraySerializer {
-                ser: self,
                 tag: Tag::LongArray,
             }),
             _ => todo!("newtype variants that are not nbt arrays"),
@@ -297,9 +290,9 @@ impl<'a> serde::Serializer for &'a mut Serializer {
         })
     }
 
-    fn collect_str<T: ?Sized>(self, value: &T) -> Result<Value>
+    fn collect_str<T>(self, value: &T) -> Result<Value>
     where
-        T: std::fmt::Display,
+        T: ?Sized + std::fmt::Display,
     {
         Ok(Value::String(value.to_string()))
     }
@@ -624,9 +617,9 @@ impl serde::Serializer for MapKeySerializer {
         Err(key_must_be_a_string())
     }
 
-    fn collect_str<T: ?Sized>(self, value: &T) -> Result<String>
+    fn collect_str<T>(self, value: &T) -> Result<String>
     where
-        T: std::fmt::Display,
+        T: ?Sized + std::fmt::Display,
     {
         Ok(value.to_string())
     }

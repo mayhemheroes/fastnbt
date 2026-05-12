@@ -45,7 +45,7 @@ impl<T: Debug> BlockData<T> {
     ///     let z = (i & 0x00F0) >> 4;
     /// }
     /// ```
-    pub fn try_iter_indices(&self) -> Option<StatesIter> {
+    pub fn try_iter_indices(&self) -> Option<StatesIter<'_>> {
         if let Some(data) = &self.inner.data {
             let bits = blockstates_bits_per_block(self.inner.palette.len());
             Some(StatesIter::new(bits, 16 * 16 * 16, data))
@@ -74,7 +74,7 @@ impl<T: Debug> BiomeData<T> {
             .at(state_index, biomes_bits_per_block(self.inner.palette.len()))
     }
 
-    pub fn try_iter_indices(&self) -> Option<StatesIter> {
+    pub fn try_iter_indices(&self) -> Option<StatesIter<'_>> {
         if let Some(data) = &self.inner.data {
             let bits = biomes_bits_per_block(self.inner.palette.len());
             Some(StatesIter::new(bits, 4 * 4 * 4, data))
@@ -97,7 +97,7 @@ struct DataInner<T: Debug> {
 impl<T: Debug> DataInner<T> {
     pub fn at(&self, index: usize, bits_per_item: usize) -> Option<&T> {
         if self.data.is_none() && self.palette.len() == 1 {
-            return self.palette.get(0);
+            return self.palette.first();
         }
 
         let data = self.data.as_ref()?;

@@ -22,14 +22,14 @@ pub struct Section {
 
 impl Section {
     pub fn block(&self, x: usize, y: usize, z: usize) -> Option<&Block> {
-        return match &self.blocks {
-            None => Some(self.block_palette.get(0).unwrap()),
+        match &self.blocks {
+            None => Some(self.block_palette.first().unwrap()),
             Some(blocks) => {
                 let index = y * (16 * 16) + z * 16 + x;
 
                 self.block_palette.get(*blocks.get(index).unwrap() as usize)
             }
-        };
+        }
     }
 
     pub fn biome(&self, x: usize, y: usize, z: usize) -> Option<Biome> {
@@ -37,8 +37,8 @@ impl Section {
         let y = y / 4;
         let z = z / 4;
 
-        return match &self.biomes {
-            None => Some(*self.biome_palette.get(0).unwrap()),
+        match &self.biomes {
+            None => Some(*self.biome_palette.first().unwrap()),
             Some(biomes) => {
                 let index = y * (4 * 4) + z * 4 + x;
 
@@ -49,10 +49,10 @@ impl Section {
                         .unwrap(),
                 )
             }
-        };
+        }
     }
 
-    pub fn iter_blocks(&self) -> SectionBlockIter {
+    pub fn iter_blocks(&self) -> SectionBlockIter<'_> {
         SectionBlockIter::new(self)
     }
 }
@@ -187,17 +187,17 @@ impl<'a> Iterator for SectionBlockIter<'a> {
     type Item = &'a Block;
 
     fn next(&mut self) -> Option<Self::Item> {
-        return if let Some(iter) = self.default_block_iter.as_mut() {
+        if let Some(iter) = self.default_block_iter.as_mut() {
             match iter.next() {
                 None => None,
-                Some(_) => self.section.block_palette.get(0),
+                Some(_) => self.section.block_palette.first(),
             }
         } else {
             match self.block_index_iter.as_mut().unwrap().next() {
                 None => None,
                 Some(index) => self.section.block_palette.get(*index as usize),
             }
-        };
+        }
     }
 }
 
