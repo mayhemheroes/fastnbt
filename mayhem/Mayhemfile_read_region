@@ -1,0 +1,6 @@
+project: fastnbt
+target: read-region
+
+cmds:
+  - cmd: /mayhem/read_region
+    libfuzzer: true
